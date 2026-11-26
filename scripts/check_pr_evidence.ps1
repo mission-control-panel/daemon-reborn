@@ -16,6 +16,27 @@ if ($governanceMigration) {
     exit 0
 }
 
+# Trello is the active tracker. Evaluate it before legacy GitHub/Linear links so
+# a mixed migration-era PR cannot bypass the Trello evidence contract.
+$trelloCardUrl = [regex]::Match(
+    $env:PR_BODY,
+    "https://trello\.com/c/[A-Za-z0-9]+(?:/[^\s)]+)?",
+    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+)
+if ($trelloCardUrl.Success) {
+    if ($env:PR_BODY -notmatch "(?im)^#{1,6}\s+(Verification|Testing)\b") {
+        throw "Trello-backed PR must include a Verification or Testing section."
+    }
+    if ($env:PR_BODY -notmatch "(?im)(blocked[- ]by|predecessor|dependency)") {
+        throw "Trello-backed PR must record predecessor/dependency verification."
+    }
+    if ($env:PR_BODY -notmatch "(?im)(reviewer|acceptance)") {
+        throw "Trello-backed PR must record independent reviewer/acceptance evidence or its NOT RUN reason."
+    }
+    Write-Output "PR evidence links to Trello card $($trelloCardUrl.Value) and includes verification, dependency, and review evidence."
+    exit 0
+}
+
 # New GitHub Issues are the source for development PRs after migration. Keep the
 # original ORC branch/title evidence contract below for already-open legacy PRs.
 $githubIssueUrl = [regex]::Match(
@@ -35,25 +56,6 @@ if ($githubIssueUrl.Success) {
         throw "GitHub-backed PR must include a Verification or Testing section."
     }
     Write-Output "PR evidence links to GitHub issue #$githubIssueNum and includes verification results."
-    exit 0
-}
-
-$trelloCardUrl = [regex]::Match(
-    $env:PR_BODY,
-    "https://trello\.com/c/[A-Za-z0-9]+(?:/[^\s)]+)?",
-    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
-)
-if ($trelloCardUrl.Success) {
-    if ($env:PR_BODY -notmatch "(?im)^#{1,6}\s+(Verification|Testing)\b") {
-        throw "Trello-backed PR must include a Verification or Testing section."
-    }
-    if ($env:PR_BODY -notmatch "(?im)(blocked[- ]by|predecessor|dependency)") {
-        throw "Trello-backed PR must record predecessor/dependency verification."
-    }
-    if ($env:PR_BODY -notmatch "(?im)(reviewer|acceptance)") {
-        throw "Trello-backed PR must record independent reviewer/acceptance evidence or its NOT RUN reason."
-    }
-    Write-Output "PR evidence links to Trello card $($trelloCardUrl.Value) and includes verification, dependency, and review evidence."
     exit 0
 }
 
