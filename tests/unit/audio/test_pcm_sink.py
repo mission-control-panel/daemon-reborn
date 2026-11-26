@@ -58,6 +58,19 @@ def test_session_bounds_queue_and_reports_queued_latency() -> None:
     assert session.dropped_bytes == 0
 
 
+def test_enqueued_stream_bytes_count_toward_progress_and_completion() -> None:
+    session = PcmPlaybackSession(FIXTURE_FORMAT, max_queue_bytes=16)
+    generation = session.begin(b"abcdefgh")
+
+    assert session.enqueue(b"ijklmnop") == 8
+    session.mark_processed(8)
+
+    progress = session.progress(generation)
+    assert progress.processed_bytes == 8
+    assert progress.processed_fraction == pytest.approx(0.5)
+    assert session.state is SinkState.PLAYING
+
+
 def test_session_generation_cancels_stale_audio_and_mute_is_silent() -> None:
     session = PcmPlaybackSession(FIXTURE_FORMAT, max_queue_bytes=64)
     generation = session.begin(generate_fixture_pcm(duration_ms=10))

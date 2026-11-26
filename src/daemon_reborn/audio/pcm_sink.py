@@ -233,6 +233,7 @@ class PcmPlaybackSession:
         accepted = min(len(data), capacity)
         accepted -= accepted % self.format.bytes_per_frame
         self._queue.extend(data[:accepted])
+        self._total_bytes += accepted
         return accepted
 
     def _fill_queue(self) -> int:
