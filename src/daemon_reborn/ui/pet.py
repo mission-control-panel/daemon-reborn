@@ -1,20 +1,24 @@
-"""Small transparent placeholder character window."""
+"""Small transparent sprite-rendered companion window."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
 from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtGui import QCloseEvent, QColor, QCursor, QMouseEvent, QPainter, QPaintEvent, QRegion
+from PySide6.QtGui import QCloseEvent, QCursor, QMouseEvent, QPainter, QPaintEvent, QRegion
 from PySide6.QtWidgets import QWidget
 
+from daemon_reborn.animation.director import MouthOverlay
+from daemon_reborn.animation.player import SpritePlayer
+from daemon_reborn.animation.renderer import SpriteRenderer
+from daemon_reborn.assets.canonical import CanonicalAssetPack, load_packaged_idle_assets
 from daemon_reborn.ui.physics import PetPhysics, PhysicsBounds, Vec2
 
 
 class PetWindow(QWidget):
-    """A passive, compact topmost window with a minimal original placeholder face."""
+    """A passive, compact topmost window rendered by the single SpriteRenderer."""
 
-    def __init__(self) -> None:
+    def __init__(self, asset_pack: CanonicalAssetPack | None = None) -> None:
         super().__init__()
         self._shutdown = False
         self.setWindowFlags(
@@ -27,11 +31,91 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setFixedSize(160, 160)
-        self.setMask(QRegion(12, 12, 136, 136, QRegion.RegionType.Ellipse))
+        self._renderer = SpriteRenderer(
+            asset_pack if asset_pack is not None else load_packaged_idle_assets()
+        )
+        self._clip_name: str | None = self._renderer.pack.fallback
+        self._frame_id: int | None = None
+        self._frame_key: str | None = None
+        self._mouth_overlay: MouthOverlay | None = None
+        self._reduced_motion = False
+        self._hit_margin = 16
+        self._update_hit_mask()
         self._drag_origin: QPoint | None = None
         self._drag_pointer: QPoint | None = None
         self._position_changed: Callable[[], None] | None = None
         self._physics: PetPhysics | None = None
+
+    @property
+    def renderer(self) -> SpriteRenderer:
+        """Return the single sprite renderer instance owned by this window."""
+
+        return self._renderer
+
+    @property
+    def reduced_motion(self) -> bool:
+        """Whether reduced-motion stationary rendering is enabled."""
+
+        return self._reduced_motion
+
+    def set_asset_pack(self, asset_pack: CanonicalAssetPack) -> None:
+        """Swap the active canonical sprite pack and refresh hit bounds."""
+
+        self._renderer = SpriteRenderer(asset_pack)
+        self._clip_name = asset_pack.fallback
+        self._frame_id = None
+        self._frame_key = None
+        self._update_hit_mask()
+        self.update()
+
+    def set_reduced_motion(self, enabled: bool) -> None:
+        """Toggle stationary reduced-motion frame rendering."""
+
+        self._reduced_motion = bool(enabled)
+        self.update()
+
+    def set_sprite_state(
+        self,
+        *,
+        clip_name: str | None = None,
+        frame_id: int | None = None,
+        frame_key: str | None = None,
+        mouth: MouthOverlay | str | None = None,
+    ) -> None:
+        """Update the active sprite frame and optional mouth overlay without stealing focus."""
+
+        if clip_name is not None:
+            self._clip_name = clip_name
+        self._frame_id = frame_id
+        self._frame_key = frame_key
+        if isinstance(mouth, str):
+            self._mouth_overlay = MouthOverlay(mouth)
+        else:
+            self._mouth_overlay = mouth
+        self.update()
+
+    def sync_from_player(
+        self,
+        player: SpritePlayer,
+        *,
+        mouth: MouthOverlay | str | None = None,
+    ) -> None:
+        """Synchronize window sprite state with the current SpritePlayer frame."""
+
+        current_frame = player.frame
+        self.set_sprite_state(
+            clip_name=player.clip.name,
+            frame_key=current_frame.key,
+            mouth=mouth,
+        )
+
+    def _update_hit_mask(self) -> None:
+        layout = self._renderer.compute_layout(
+            self.size(),
+            device_pixel_ratio=max(1.0, float(self.devicePixelRatioF())),
+            margin_logical=self._hit_margin,
+        )
+        self.setMask(QRegion(layout.hit_rect))
 
     def set_position_changed_callback(self, callback: Callable[[], None]) -> None:
         """Set the callback used to remember the screen anchor after dragging."""
@@ -131,12 +215,17 @@ class PetWindow(QWidget):
 
     def paintEvent(self, _event: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#77b9a5"))
-        painter.drawEllipse(12, 12, 136, 136)
-        painter.setBrush(QColor("#19352d"))
-        painter.drawEllipse(48, 58, 12, 14)
-        painter.drawEllipse(100, 58, 12, 14)
-        painter.drawRoundedRect(68, 96, 24, 6, 3, 3)
-        painter.end()
+        try:
+            self._renderer.render_to_painter(
+                painter,
+                self.size(),
+                clip_name=self._clip_name,
+                frame_id=self._frame_id,
+                frame_key=self._frame_key,
+                mouth=self._mouth_overlay,
+                device_pixel_ratio=max(1.0, float(self.devicePixelRatioF())),
+                margin_logical=self._hit_margin,
+                reduced_motion=self._reduced_motion,
+            )
+        finally:
+            painter.end()

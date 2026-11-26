@@ -104,7 +104,7 @@ class CanonicalAssetPack:
             )
         if QThread.currentThread() != application.thread():
             raise CanonicalAssetError("QPixmap construction is restricted to the GUI thread")
-        image = QImage.fromData(self._atlas_bytes, b"PNG")
+        image = QImage.fromData(self._atlas_bytes)
         if image.isNull() or image.format() != QImage.Format.Format_RGBA8888:
             image = image.convertToFormat(QImage.Format.Format_RGBA8888)
         if image.isNull() or image.size().width() != self.canvas[0] * len(self.frames):

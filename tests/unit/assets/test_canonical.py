@@ -202,10 +202,15 @@ def test_cache_invalidates_after_verified_manifest_digest_changes(tmp_path: Path
     assert second.frames[0].duration_ms == 300
 
 
-def test_pixmap_construction_requires_qt_application(tmp_path: Path) -> None:
+def test_pixmap_construction_requires_qt_application(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
     _write_pack(tmp_path)
 
     pack = load_canonical_assets(tmp_path)
+    monkeypatch.setattr(QApplication, "instance", staticmethod(lambda: None))
 
     with pytest.raises(CanonicalAssetError, match="QApplication|GUI thread"):
         pack.build_pixmap()
