@@ -41,6 +41,23 @@ def test_desktop_application_applies_persisted_reduced_motion(
     desktop.shutdown()
 
 
+def test_desktop_application_applies_live_reduced_motion_setting(
+    qapp: QApplication, tmp_path: Path
+) -> None:
+    from daemon_reborn.app.application import DesktopApplication
+
+    ui_settings = QSettings(str(tmp_path / "live-ui.ini"), QSettings.Format.IniFormat)
+    desktop = DesktopApplication(qapp, ui_settings=ui_settings)
+    desktop.show_settings()
+    assert desktop._settings_dialog is not None
+
+    desktop._settings_dialog.reduced_motion.setChecked(True)
+    desktop._settings_dialog.save_button.click()
+
+    assert desktop.pet_window.reduced_motion is True
+    desktop.shutdown()
+
+
 def test_pet_window_is_small_translucent_and_does_not_take_focus(qapp: QApplication) -> None:
     from daemon_reborn.ui.pet import PetWindow
 

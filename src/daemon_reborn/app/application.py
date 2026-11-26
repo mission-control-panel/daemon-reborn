@@ -8,7 +8,7 @@ from PySide6.QtCore import QRect, QSettings, Qt, QTimer
 from PySide6.QtGui import QCursor, QGuiApplication, QScreen
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
-from daemon_reborn.ui.f04 import SettingsPanel, SettingsStore, SpeechBubble
+from daemon_reborn.ui.f04 import SettingsPanel, SettingsStore, SpeechBubble, UiSettings
 from daemon_reborn.ui.geometry import (
     NormalizedAnchor,
     ScreenArea,
@@ -88,11 +88,16 @@ class DesktopApplication:
             self._settings_dialog.raise_()
             self._settings_dialog.activateWindow()
             return
-        dialog = SettingsPanel(self._ui_settings_store)
+        dialog = SettingsPanel(self._ui_settings_store, on_saved=self._apply_ui_settings)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         dialog.finished.connect(lambda _result: setattr(self, "_settings_dialog", None))
         self._settings_dialog = dialog
         dialog.open()
+
+    def _apply_ui_settings(self, settings: UiSettings) -> None:
+        """Apply live settings that affect already-running shell components."""
+
+        self.pet_window.set_reduced_motion(settings.reduced_motion)
 
     def shutdown(self) -> None:
         """Hide owned UI and request a clean Qt event-loop exit."""
