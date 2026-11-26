@@ -10,6 +10,8 @@ Historical `ORC-*` IDs and GitHub issue links inside migrated cards are preserve
 
 Follow the root [AGENTS.md](AGENTS.md) before making changes. It is an entrypoint to Trello and repository standards, not a separate backlog.
 
+Policy references remain separate from task tracking: [project constitution](https://linear.app/agtorchestrator/document/00-start-here-project-constitution-and-source-of-truth-2496696b000f), [agent operating contract](https://linear.app/agtorchestrator/document/06-agent-operating-contract-required-task-lifecycle), [decision register](https://linear.app/agtorchestrator/document/08-decision-register-adrs-approved-and-pending-5951be6efd5e), [quality matrix](https://linear.app/agtorchestrator/document/10-quality-and-acceptance-matrix-50c74a9061d3), and [workflow v3.1](https://linear.app/agtorchestrator/document/12-agent-workflow-v31-routing-dor-risk-and-merge-policy-8cb589a28d1e). These links provide policy context; Trello remains the active tracker.
+
 This repository contains the implementation only. The legacy Daemon repository is reference-only;
 no legacy code or assets are used here.
 
@@ -42,7 +44,7 @@ The shell shows a small placeholder character and a system-tray menu with Show p
 ## Current project scope
 
 The `src/daemon_reborn` package establishes boundaries for app orchestration, standard-library-only
-domain code, animation, assets, audio, Qt UI, voice, intelligence, memory and integrations. The CLI is a bootstrap
+domain code, animation, Qt UI, voice, intelligence, memory and integrations. The CLI is a bootstrap
 entrypoint for the current shell; further product behavior is implemented through the scoped Trello
 cards.
 

@@ -38,6 +38,25 @@ if ($githubIssueUrl.Success) {
     exit 0
 }
 
+$trelloCardUrl = [regex]::Match(
+    $env:PR_BODY,
+    "https://trello\.com/c/[A-Za-z0-9]+(?:/[^\s)]+)?",
+    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+)
+if ($trelloCardUrl.Success) {
+    if ($env:PR_BODY -notmatch "(?im)^#{1,6}\s+(Verification|Testing)\b") {
+        throw "Trello-backed PR must include a Verification or Testing section."
+    }
+    if ($env:PR_BODY -notmatch "(?im)(blocked[- ]by|predecessor|dependency)") {
+        throw "Trello-backed PR must record predecessor/dependency verification."
+    }
+    if ($env:PR_BODY -notmatch "(?im)(reviewer|acceptance)") {
+        throw "Trello-backed PR must record independent reviewer/acceptance evidence or its NOT RUN reason."
+    }
+    Write-Output "PR evidence links to Trello card $($trelloCardUrl.Value) and includes verification, dependency, and review evidence."
+    exit 0
+}
+
 $issueUrl = [regex]::Match(
     $env:PR_BODY,
     "https://linear\.app/agtorchestrator/issue/(ORC-\d+)",
