@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime, time
 from enum import StrEnum
@@ -137,9 +138,15 @@ def is_quiet_at(settings: UiSettings, instant: datetime) -> bool:
 class SettingsPanel(QDialog):
     """Keyboard-accessible settings surface with no provider or sensor access."""
 
-    def __init__(self, store: SettingsStore, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        store: SettingsStore,
+        parent: QWidget | None = None,
+        on_saved: Callable[[UiSettings], None] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.store = store
+        self._on_saved = on_saved
         self._settings = store.load()
         self.setWindowTitle("Daemon Reborn Settings")
         self.setModal(False)
@@ -214,6 +221,8 @@ class SettingsPanel(QDialog):
         )
         if self.store.save(candidate):
             self._settings = candidate
+            if self._on_saved is not None:
+                self._on_saved(candidate)
             self.error.clear()
         else:
             self.error.setText("Settings could not be saved; your previous settings were kept.")
@@ -232,6 +241,8 @@ class SettingsPanel(QDialog):
             self.error.setText("Settings could not be reset; your previous settings were kept.")
             return
         self._settings = UiSettings()
+        if self._on_saved is not None:
+            self._on_saved(self._settings)
         self.speech.setChecked(False)
         self.mute.setChecked(False)
         self.reduced_motion.setChecked(False)
