@@ -28,6 +28,19 @@ def test_desktop_shell_application_module_exists() -> None:
     assert find_spec("daemon_reborn.app.application") is not None
 
 
+def test_desktop_application_applies_persisted_reduced_motion(
+    qapp: QApplication, tmp_path: Path
+) -> None:
+    from daemon_reborn.app.application import DesktopApplication
+
+    ui_settings = QSettings(str(tmp_path / "ui.ini"), QSettings.Format.IniFormat)
+    ui_settings.setValue("ui/v1/reducedMotion", True)
+    desktop = DesktopApplication(qapp, ui_settings=ui_settings)
+
+    assert desktop.pet_window.reduced_motion is True
+    desktop.shutdown()
+
+
 def test_pet_window_is_small_translucent_and_does_not_take_focus(qapp: QApplication) -> None:
     from daemon_reborn.ui.pet import PetWindow
 

@@ -225,3 +225,13 @@ def test_pet_window_renders_packaged_idle_and_syncs_with_player(
     assert pet.mask().contains(pet.rect().center())
     assert not pet.mask().contains(pet.rect().topLeft())
     pet.shutdown()
+
+
+def test_pet_window_ignores_invalid_mouth_intent(qapp: QApplication) -> None:
+    from daemon_reborn.ui.pet import PetWindow
+
+    pet = PetWindow(asset_pack=_make_pack())
+    pet.set_sprite_state(mouth="not-an-authored-pose")
+
+    assert pet._mouth_overlay is None
+    pet.shutdown()

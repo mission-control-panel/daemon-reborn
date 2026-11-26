@@ -89,7 +89,12 @@ class PetWindow(QWidget):
         self._frame_id = frame_id
         self._frame_key = frame_key
         if isinstance(mouth, str):
-            self._mouth_overlay = MouthOverlay(mouth)
+            try:
+                self._mouth_overlay = MouthOverlay(mouth)
+            except ValueError:
+                # External animation intents are untrusted at this UI boundary.
+                # Preserve the last valid base frame and omit an invalid overlay.
+                self._mouth_overlay = None
         else:
             self._mouth_overlay = mouth
         self.update()

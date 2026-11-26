@@ -26,7 +26,10 @@ class DesktopApplication:
     """Coordinate the pet window, tray, and clean application exit."""
 
     def __init__(
-        self, qt_application: QApplication, placement_settings: QSettings | None = None
+        self,
+        qt_application: QApplication,
+        placement_settings: QSettings | None = None,
+        ui_settings: QSettings | None = None,
     ) -> None:
         self.qt_application = qt_application
         self.qt_application.setQuitOnLastWindowClosed(False)
@@ -36,7 +39,10 @@ class DesktopApplication:
         self._physics_timer.setInterval(33)
         self._physics_timer.timeout.connect(self._advance_pet_physics)
         self._placement_settings = placement_settings or QSettings("Daemon Reborn", "Daemon Reborn")
-        self._ui_settings_store = SettingsStore(QSettings("Daemon Reborn", "Daemon Reborn"))
+        self._ui_settings_store = SettingsStore(
+            ui_settings or QSettings("Daemon Reborn", "Daemon Reborn")
+        )
+        self.pet_window.set_reduced_motion(self._ui_settings_store.load().reduced_motion)
         self._watched_screens: list[QScreen] = []
         primary = QGuiApplication.primaryScreen()
         # Screen references are intentionally process-local.  QScreen.name() is
