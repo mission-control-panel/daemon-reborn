@@ -1,6 +1,7 @@
-## Linear issue
+## Trello card
 
-ORC issue: [ORC-___](https://linear.app/agtorchestrator/issue/ORC-___)
+Card: [Daemon Reborn Trello card](https://trello.com/b/gvDmOrM7/daemon-reborn)
+Card URL / identifier:
 
 ## Summary and acceptance
 
